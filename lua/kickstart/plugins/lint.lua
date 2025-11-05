@@ -7,6 +7,8 @@ return {
       local lint = require 'lint'
       lint.linters_by_ft = {
         markdown = { 'markdownlint' },
+        python = { 'pycodestyle' },
+        dockerfile = { 'hadolint' },
       }
 
       -- To allow other plugins to add linters to require('lint').linters_by_ft,
