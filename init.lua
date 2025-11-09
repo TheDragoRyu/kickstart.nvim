@@ -663,6 +663,20 @@ require('lazy').setup({
         },
       }
 
+      local sysname = vim.loop.os_uname().sysname
+      local python_platform = 'Linux'
+
+      if sysname:match 'Windows' then
+        python_platform = 'Windows'
+      elseif sysname:match 'Darwin' then
+        python_platform = 'Darwin'
+      end
+
+      local python_path = './.venv/bin/python'
+      if python_platform == 'Windows' then
+        python_path = '.\\.venv\\Scripts\\python.exe'
+      end
+
       -- LSP servers and clients are able to communicate to each other what features they support.
       --  By default, Neovim doesn't support everything that is in the LSP specification.
       --  When you add blink.cmp, luasnip, etc. Neovim now has *more* capabilities.
@@ -684,6 +698,10 @@ require('lazy').setup({
         pyright = {
           settings = {
             python = {
+              venvPath = '.',
+              venv = '.venv',
+              pythonPath = python_path,
+              pythonPlatform = python_platform,
               analysis = {
                 autoSearchPaths = true,
                 diagnosticMode = 'workspace',
@@ -736,19 +754,28 @@ require('lazy').setup({
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
       })
+
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+      for name, config in pairs(servers) do
+        local merged = vim.tbl_deep_extend('force', {
+          capabilities = capabilities,
+        }, config or {})
+
+        vim.lsp.config(name, merged)
+      end
 
       require('mason-lspconfig').setup {
         ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
         automatic_installation = false,
         handlers = {
           function(server_name)
-            local server = servers[server_name] or {}
+            vim.lsp.enable(server_name)
+            --local server = servers[server_name] or {}
             -- This handles overriding only values explicitly passed
             -- by the server configuration above. Useful when disabling
             -- certain features of an LSP (for example, turning off formatting for ts_ls)
-            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
+            -- server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+            -- require('lspconfig')[server_name].setup(server)
           end,
         },
       }
