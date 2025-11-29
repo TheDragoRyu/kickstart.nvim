@@ -103,6 +103,10 @@ vim.keymap.set('v', 'x', '"_d')
 
 vim.keymap.set('v', '<leader>p', '"_dP')
 
+-- Move text up and down when selected
+vim.keymap.set('v', 'J', ":move '>+1<CR>gv=gv", { silent = true })
+vim.keymap.set('v', 'K', ":move '<-2<CR>gv=gv", { silent = true })
+
 -- ================================
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
