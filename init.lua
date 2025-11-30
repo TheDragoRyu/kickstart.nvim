@@ -318,11 +318,39 @@ require('lazy').setup({
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
+        defaults = {
+          --   mappings = {
+          --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
+          --   },
+          file_ignore_patters = {
+            '%.dll$',
+            '%.csproj$',
+            -- Unity Specific
+            '%.meta$',
+            '%.unity$',
+            '%.asset$',
+            '%.anim$',
+            '%.png$',
+            '%.controller$',
+            '%.mat$',
+            '%.prefab$',
+            '%.playable$',
+            '%.shadergraph$',
+            '%.shadersubgraph$',
+            '%.shader$',
+            '%.rsp$',
+            '%.rsp2$',
+            '%.mvfrm$',
+            '%.aseprite$',
+            -- Text format
+            '%.ttf$',
+            -- Audio/Video file formats
+            '%.mp3$',
+            '%.mp4$',
+            '%.wav$',
+          },
+        },
+
         -- pickers = {}
         extensions = {
           ['ui-select'] = {
