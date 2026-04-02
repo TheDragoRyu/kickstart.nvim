@@ -1,5 +1,46 @@
--- You can add your own plugins here or in other files in this directory!
---  I promise not to create any merge conflicts in this directory :)
---
--- See the kickstart.nvim README for more information
-return {}
+return {
+  { -- Live markdown rendering like Obsidian
+    'MeanderingProgrammer/render-markdown.nvim',
+    ft = { 'markdown' },
+    dependencies = {
+      'nvim-treesitter/nvim-treesitter',
+      'nvim-tree/nvim-web-devicons',
+    },
+    opts = {
+      heading = {
+        enabled = true,
+        icons = { '# ', '## ', '### ', '#### ', '##### ', '###### ' },
+        sign = false,
+      },
+      bullet = {
+        enabled = true,
+        icons = { '', '', '', '' },
+      },
+      checkbox = {
+        enabled = true,
+        unchecked = { icon = ' ' },
+        checked = { icon = ' ' },
+        custom = {
+          todo = { raw = '[-]', rendered = '󰥔 ', highlight = 'RenderMarkdownTodo' },
+        },
+      },
+      code = {
+        enabled = true,
+        sign = false,
+        style = 'full',
+        width = 'block',
+        min_width = 60,
+        border = 'thin',
+      },
+      dash = { enabled = true },
+      link = { enabled = true },
+      pipe_table = {
+        enabled = true,
+        style = 'full',
+      },
+    },
+    keys = {
+      { '<leader>tm', '<cmd>RenderMarkdown toggle<CR>', desc = '[T]oggle [M]arkdown render' },
+    },
+  },
+}
