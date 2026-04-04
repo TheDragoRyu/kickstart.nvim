@@ -1,3 +1,5 @@
+local ensure_installed = { 'gopls', 'pyright', 'lua_ls', 'stylua' }
+
 return {
   {
     'folke/lazydev.nvim',
@@ -13,7 +15,7 @@ return {
     dependencies = {
       { 'mason-org/mason.nvim', opts = {} },
       'mason-org/mason-lspconfig.nvim',
-      'WhoIsSethDaniel/mason-tool-installer.nvim',
+      { 'WhoIsSethDaniel/mason-tool-installer.nvim', opts = { ensure_installed = ensure_installed } },
       { 'j-hui/fidget.nvim', opts = {} },
       'saghen/blink.cmp',
     },
@@ -21,6 +23,10 @@ return {
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
         callback = function(event)
+          local client = vim.lsp.get_client_by_id(event.data.client_id)
+          local telescope = require 'telescope.builtin'
+          local uses_direct_navigation = client and client.name == 'roslyn'
+
           local map = function(keys, func, desc, mode)
             mode = mode or 'n'
             vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
@@ -28,13 +34,13 @@ return {
 
           map('gn', vim.lsp.buf.rename, '[R]e[n]ame')
           map('ga', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
-          map('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
-          map('gi', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
-          map('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+          map('gr', uses_direct_navigation and vim.lsp.buf.references or telescope.lsp_references, '[G]oto [R]eferences')
+          map('gi', uses_direct_navigation and vim.lsp.buf.implementation or telescope.lsp_implementations, '[G]oto [I]mplementation')
+          map('gd', uses_direct_navigation and vim.lsp.buf.definition or telescope.lsp_definitions, '[G]oto [D]efinition')
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
-          map('gO', require('telescope.builtin').lsp_document_symbols, 'Open Document Symbols')
-          map('gW', require('telescope.builtin').lsp_dynamic_workspace_symbols, 'Open Workspace Symbols')
-          map('grt', require('telescope.builtin').lsp_type_definitions, '[G]oto [T]ype Definition')
+          map('gO', telescope.lsp_document_symbols, 'Open Document Symbols')
+          map('gW', telescope.lsp_dynamic_workspace_symbols, 'Open Workspace Symbols')
+          map('grt', uses_direct_navigation and vim.lsp.buf.type_definition or telescope.lsp_type_definitions, '[G]oto [T]ype Definition')
 
           ---@param client vim.lsp.Client
           ---@param method vim.lsp.protocol.Method
@@ -49,7 +55,6 @@ return {
           end
 
           -- Highlight references of the word under cursor on CursorHold
-          local client = vim.lsp.get_client_by_id(event.data.client_id)
           if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf) then
             local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
@@ -126,7 +131,7 @@ return {
 
       local capabilities = require('blink.cmp').get_lsp_capabilities()
 
-      local servers = {
+      local server_configs = {
         gopls = {},
         pyright = {
           settings = {
@@ -155,13 +160,7 @@ return {
         },
       }
 
-      local ensure_installed = vim.tbl_keys(servers or {})
-      vim.list_extend(ensure_installed, {
-        'stylua',
-      })
-
-      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
-      for name, config in pairs(servers) do
+      for name, config in pairs(server_configs) do
         local merged = vim.tbl_deep_extend('force', {
           capabilities = capabilities,
         }, config or {})
