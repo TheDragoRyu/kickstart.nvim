@@ -61,6 +61,12 @@ return {
     config = function(_, opts)
       vim.lsp.config('roslyn', {
         capabilities = require('blink.cmp').get_lsp_capabilities(),
+        settings = {
+          ['csharp|code_lens'] = {
+            dotnet_enable_references_code_lens = false,
+            dotnet_enable_tests_code_lens = false,
+          },
+        },
       })
 
       require('roslyn').setup(opts)
