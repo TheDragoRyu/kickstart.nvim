@@ -68,6 +68,17 @@ return {
       end,
       desc = 'Debug: Set Breakpoint',
     },
+    {
+      '<leader>du',
+      function()
+        require('dap').run {
+          type = 'unity',
+          request = 'attach',
+          name = 'Attach to Unity Editor',
+        }
+      end,
+      desc = 'Debug: Attach Unity Editor',
+    },
     -- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
     {
       '<F7>',
@@ -152,6 +163,25 @@ return {
         end,
       },
     }
+
+    -- Unity Editor attach debugger (Mono soft debugger protocol)
+    -- Binary must be installed manually:
+    --   1. Install VS Code extension: ms-vscode.unity-debug
+    --   2. Copy extension/bin/UnityDebug to ~/.local/share/nvim/unity-debug/UnityDebug
+    --   3. chmod +x ~/.local/share/nvim/unity-debug/UnityDebug
+    local unity_debug_bin = vim.fn.stdpath 'data' .. '/unity-debug/UnityDebug'
+    if vim.fn.executable(unity_debug_bin) == 1 then
+      dap.adapters.unity = {
+        type = 'executable',
+        command = unity_debug_bin,
+      }
+    end
+    dap.configurations.cs = dap.configurations.cs or {}
+    table.insert(dap.configurations.cs, {
+      type = 'unity',
+      request = 'attach',
+      name = 'Attach to Unity Editor',
+    })
 
     -- Install golang specific config
     require('dap-go').setup {
