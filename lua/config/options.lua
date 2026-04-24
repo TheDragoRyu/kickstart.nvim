@@ -58,6 +58,8 @@ if vim.env.NVIM_TRANSPARENT == '1' then
       vim.api.nvim_set_hl(0, 'Normal', { bg = 'none' })
       vim.api.nvim_set_hl(0, 'NormalNC', { bg = 'none' })
       vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'none' })
+      vim.api.nvim_set_hl(0, 'WhichKeyFloat', { bg = 'none' })
+      vim.api.nvim_set_hl(0, 'WhichKeyBorder', { bg = 'none' })
     end,
   })
 end
