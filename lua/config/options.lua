@@ -60,6 +60,9 @@ if vim.env.NVIM_TRANSPARENT == '1' then
       vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'none' })
       vim.api.nvim_set_hl(0, 'WhichKeyFloat', { bg = 'none' })
       vim.api.nvim_set_hl(0, 'WhichKeyBorder', { bg = 'none' })
+      vim.api.nvim_set_hl(0, 'NeoTreeNormal', { bg = 'none' })
+      vim.api.nvim_set_hl(0, 'NeoTreeNormalNC', { bg = 'none' })
+      vim.api.nvim_set_hl(0, 'NeoTreeEndOfBuffer', { bg = 'none' })
     end,
   })
 end
