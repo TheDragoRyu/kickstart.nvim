@@ -87,5 +87,32 @@ return {
     vim.keymap.set('n', '<leader>sn', function()
       builtin.find_files { cwd = vim.fn.stdpath 'config' }
     end, { desc = '[S]earch [N]eovim files' })
+
+    -- Unity: find scenes/prefabs/assets referencing the current C# script via its GUID
+    vim.keymap.set('n', '<leader>su', function()
+      local cs_path = vim.fn.expand '%:p'
+      local meta_path = cs_path .. '.meta'
+      local meta = io.open(meta_path, 'r')
+      if not meta then
+        vim.notify('No .meta file: ' .. meta_path, vim.log.levels.WARN)
+        return
+      end
+      local guid
+      for line in meta:lines() do
+        guid = line:match '^guid: (%x+)'
+        if guid then break end
+      end
+      meta:close()
+      if not guid then
+        vim.notify('Could not extract GUID from ' .. meta_path, vim.log.levels.WARN)
+        return
+      end
+      builtin.grep_string {
+        search = guid,
+        prompt_title = 'Unity Asset Usages (GUID: ' .. guid .. ')',
+        glob_pattern = { '*.unity', '*.prefab', '*.asset' },
+        additional_args = { '--no-ignore' },
+      }
+    end, { desc = '[S]earch [U]nity asset usages' })
   end,
 }
