@@ -1,4 +1,4 @@
-local ensure_installed = { 'gopls', 'pyright', 'lua_ls', 'stylua' }
+local ensure_installed = { 'gopls', 'pyright', 'lua_ls' }
 
 return {
   {

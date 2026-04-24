@@ -1,6 +1,7 @@
 return {
   'nvim-telescope/telescope.nvim',
-  event = 'VimEnter',
+  cmd = 'Telescope',
+  keys = { '<leader>s', '<leader>/', '<leader><leader>' },
   dependencies = {
     'nvim-lua/plenary.nvim',
     {
@@ -21,7 +22,7 @@ return {
         mappings = {
           i = { ['<c-enter>'] = 'to_fuzzy_refine' },
         },
-        file_ignore_patters = {
+        file_ignore_patterns = {
           '%.dll$',
           '%.csproj$',
           -- Unity Specific
