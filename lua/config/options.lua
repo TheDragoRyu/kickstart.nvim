@@ -50,11 +50,14 @@ vim.o.scrolloff = 8
 vim.o.confirm = true
 
 -- Terminal transparency (acrylic/blur backgrounds)
-vim.api.nvim_create_autocmd('ColorScheme', {
-  pattern = '*',
-  callback = function()
-    vim.api.nvim_set_hl(0, 'Normal', { bg = 'none' })
-    vim.api.nvim_set_hl(0, 'NormalNC', { bg = 'none' })
-    vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'none' })
-  end,
-})
+-- Enable by setting NVIM_TRANSPARENT=1 in your terminal profile
+if vim.env.NVIM_TRANSPARENT == '1' then
+  vim.api.nvim_create_autocmd('ColorScheme', {
+    pattern = '*',
+    callback = function()
+      vim.api.nvim_set_hl(0, 'Normal', { bg = 'none' })
+      vim.api.nvim_set_hl(0, 'NormalNC', { bg = 'none' })
+      vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'none' })
+    end,
+  })
+end
