@@ -20,12 +20,151 @@ return {
       'saghen/blink.cmp',
     },
     config = function()
+      local csharp_lsp_clients = {
+        easy_dotnet = true,
+        roslyn = true,
+      }
+
+      local unity_project_cache = {}
+
+      local function is_csharp_lsp_client(client_id)
+        local client = vim.lsp.get_client_by_id(client_id)
+        return client and csharp_lsp_clients[client.name] == true
+      end
+
+      local function is_unity_csharp_buffer(bufnr)
+        if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].filetype ~= 'cs' then
+          return false
+        end
+
+        local filename = vim.api.nvim_buf_get_name(bufnr)
+        if filename == '' then
+          return false
+        end
+
+        local cached = unity_project_cache[filename]
+        if cached ~= nil then
+          return cached
+        end
+
+        local project_settings = vim.fs.find('ProjectSettings', {
+          path = vim.fs.dirname(filename),
+          upward = true,
+          type = 'directory',
+        })[1]
+        local is_unity = project_settings and vim.uv.fs_stat(vim.fs.joinpath(project_settings, 'ProjectVersion.txt')) ~= nil or false
+
+        unity_project_cache[filename] = is_unity
+        return is_unity
+      end
+
+      local function diagnostic_code(diagnostic)
+        local code = diagnostic and diagnostic.code
+        if type(code) == 'table' then
+          code = code.value or code.code
+        end
+
+        return code and tostring(code) or nil
+      end
+
+      local function diagnostic_message(diagnostic)
+        local message = diagnostic and diagnostic.message
+        if type(message) == 'table' then
+          message = message.value
+        end
+
+        return type(message) == 'string' and message or ''
+      end
+
+      local function diagnostic_range(diagnostic)
+        if diagnostic and diagnostic.range then
+          return diagnostic.range.start.line, diagnostic.range['end'].line
+        end
+
+        local start_line = diagnostic and diagnostic.lnum or 0
+        return start_line, diagnostic and diagnostic.end_lnum or start_line
+      end
+
+      local function has_serializefield_attribute(bufnr, line)
+        if not is_unity_csharp_buffer(bufnr) then
+          return false
+        end
+
+        for lnum = line, math.max(line - 6, 0), -1 do
+          local text = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1] or ''
+          local attribute_text = text:match '^%s*%[(.-)%]'
+
+          if attribute_text and attribute_text:find('SerializeField', 1, true) then
+            return true
+          end
+
+          -- Only walk through an attribute block directly attached to the field.
+          if lnum ~= line and not attribute_text then
+            return false
+          end
+        end
+
+        return false
+      end
+
+      local function is_serializefield_readonly_diagnostic(diagnostic, bufnr)
+        local message = diagnostic_message(diagnostic):lower()
+        local is_make_field_readonly = diagnostic_code(diagnostic) == 'IDE0044' or message:find('make field readonly', 1, true)
+
+        if not is_make_field_readonly then
+          return false
+        end
+
+        local start_line, end_line = diagnostic_range(diagnostic)
+        for line = start_line, end_line do
+          if has_serializefield_attribute(bufnr, line) then
+            return true
+          end
+        end
+
+        return has_serializefield_attribute(bufnr, start_line)
+      end
+
+      local function filter_serializefield_readonly_diagnostics(diagnostics, bufnr)
+        return vim.tbl_filter(function(diagnostic)
+          return not is_serializefield_readonly_diagnostic(diagnostic, bufnr)
+        end, diagnostics or {})
+      end
+
+      local methods = vim.lsp.protocol.Methods
+      vim.lsp.handlers[methods.textDocument_publishDiagnostics] = function(err, result, ctx, config)
+        if result and result.diagnostics and is_csharp_lsp_client(ctx.client_id) then
+          local bufnr = vim.uri_to_bufnr(result.uri)
+          if is_unity_csharp_buffer(bufnr) then
+            result = vim.tbl_extend('force', result, {
+              diagnostics = filter_serializefield_readonly_diagnostics(result.diagnostics, bufnr),
+            })
+          end
+        end
+
+        return vim.lsp.diagnostic.on_publish_diagnostics(err, result, ctx, config)
+      end
+
+      vim.lsp.handlers[methods.textDocument_diagnostic] = function(err, result, ctx)
+        if result and result.items and ctx.params and ctx.params.textDocument and is_csharp_lsp_client(ctx.client_id) then
+          local bufnr = vim.uri_to_bufnr(ctx.params.textDocument.uri)
+          if is_unity_csharp_buffer(bufnr) then
+            result = vim.tbl_extend('force', result, {
+              items = filter_serializefield_readonly_diagnostics(result.items, bufnr),
+            })
+          end
+        end
+
+        return vim.lsp.diagnostic.on_diagnostic(err, result, ctx)
+      end
+
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
         callback = function(event)
           local client = vim.lsp.get_client_by_id(event.data.client_id)
           local telescope = require 'telescope.builtin'
           local uses_direct_navigation = client and (client.name == 'roslyn' or client.name == 'easy_dotnet')
+          local uses_csharp_lens = uses_direct_navigation
 
           local map = function(keys, func, desc, mode)
             mode = mode or 'n'
@@ -33,7 +172,30 @@ return {
           end
 
           map('gn', vim.lsp.buf.rename, '[R]e[n]ame')
-          map('ga', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
+          map('ga', function()
+            vim.lsp.buf.code_action {
+              filter = function(action)
+                if not uses_direct_navigation or not is_unity_csharp_buffer(event.buf) then
+                  return true
+                end
+
+                local title = (action.title or ''):lower()
+                local is_readonly_action = title:find('readonly', 1, true) and title:find('field', 1, true)
+
+                if is_readonly_action and has_serializefield_attribute(event.buf, vim.api.nvim_win_get_cursor(0)[1] - 1) then
+                  return false
+                end
+
+                for _, diagnostic in ipairs(action.diagnostics or {}) do
+                  if is_serializefield_readonly_diagnostic(diagnostic, event.buf) then
+                    return false
+                  end
+                end
+
+                return true
+              end,
+            }
+          end, '[G]oto Code [A]ction', { 'n', 'x' })
           map('gr', uses_direct_navigation and vim.lsp.buf.references or telescope.lsp_references, '[G]oto [R]eferences')
           map('gi', uses_direct_navigation and vim.lsp.buf.implementation or telescope.lsp_implementations, '[G]oto [I]mplementation')
           map('gd', uses_direct_navigation and vim.lsp.buf.definition or telescope.lsp_definitions, '[G]oto [D]efinition')
@@ -52,6 +214,31 @@ return {
             else
               return client.supports_method(method, { bufnr = bufnr })
             end
+          end
+
+          if client and uses_csharp_lens and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_codeLens, event.buf) then
+            local codelens_augroup = vim.api.nvim_create_augroup('kickstart-lsp-codelens', { clear = false })
+            local refresh_codelens = function()
+              if not vim.api.nvim_buf_is_valid(event.buf) then
+                return
+              end
+              vim.lsp.codelens.refresh { bufnr = event.buf }
+            end
+
+            -- Roslyn CodeLens is expensive in Unity solutions; refresh it at
+            -- stable points instead of on cursor movement or idle events.
+            for _, delay in ipairs { 2000, 10000 } do
+              vim.defer_fn(refresh_codelens, delay)
+            end
+            vim.api.nvim_clear_autocmds { group = codelens_augroup, buffer = event.buf }
+            vim.api.nvim_create_autocmd('BufWritePost', {
+              buffer = event.buf,
+              group = codelens_augroup,
+              callback = refresh_codelens,
+            })
+
+            map('<leader>cl', refresh_codelens, 'Refresh Code[L]ens')
+            map('<leader>cL', vim.lsp.codelens.run, 'Run Code[L]ens')
           end
 
           -- Highlight references of the word under cursor on CursorHold

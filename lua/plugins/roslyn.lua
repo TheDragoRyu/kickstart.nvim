@@ -63,7 +63,7 @@ return {
         capabilities = require('blink.cmp').get_lsp_capabilities(),
         settings = {
           ['csharp|code_lens'] = {
-            dotnet_enable_references_code_lens = false,
+            dotnet_enable_references_code_lens = true,
             dotnet_enable_tests_code_lens = false,
           },
         },
@@ -77,7 +77,9 @@ return {
         callback = function()
           local line = vim.api.nvim_get_current_line()
           local indent = line:match '^(%s*)///$'
-          if not indent then return end
+          if not indent then
+            return
+          end
           local row = vim.api.nvim_win_get_cursor(0)[1]
           local t = { indent .. '/// <summary>', indent .. '/// ', indent .. '/// </summary>' }
           vim.api.nvim_buf_set_lines(0, row - 1, row, false, t)
@@ -106,15 +108,21 @@ return {
         callback = function()
           local line = vim.api.nvim_get_current_line()
           -- only inside doc comment lines
-          if not line:match '^%s*///' then return end
+          if not line:match '^%s*///' then
+            return
+          end
           local col = vim.api.nvim_win_get_cursor(0)[2]
           local before = line:sub(1, col)
           -- match last unclosed opening tag (not self-closing, not closing tag)
           local tag = before:match '<([%w]+)[^/]*>$'
-          if not tag then return end
+          if not tag then
+            return
+          end
           -- avoid double-inserting
           local after = line:sub(col + 1)
-          if after:match('^</' .. tag .. '>') then return end
+          if after:match('^</' .. tag .. '>') then
+            return
+          end
           local new_line = before .. '</' .. tag .. '>' .. after
           vim.api.nvim_set_current_line(new_line)
         end,
