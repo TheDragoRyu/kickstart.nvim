@@ -5,10 +5,18 @@ return {
   config = function()
     require('easy-dotnet').setup {
       lsp = {
-        -- roslyn.nvim owns the C# LSP; avoid a second Roslyn client that
-        -- repeatedly refreshes CodeLens as "Unresolved lens ...".
-        enabled = false,
+        -- easy-dotnet owns the active Roslyn client in this config. Keep the
+        -- LSP enabled, but do not refresh CodeLens on cursor/idle events.
+        enabled = true,
         auto_refresh_codelens = false,
+        config = {
+          settings = {
+            ['csharp|code_lens'] = {
+              dotnet_enable_references_code_lens = false,
+              dotnet_enable_tests_code_lens = false,
+            },
+          },
+        },
       },
       terminal = function(path, action)
         local cmd = action == 'run' and ('dotnet run --project ' .. path) or ('dotnet build ' .. path)

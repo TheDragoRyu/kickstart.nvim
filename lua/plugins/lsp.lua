@@ -25,7 +25,7 @@ return {
         callback = function(event)
           local client = vim.lsp.get_client_by_id(event.data.client_id)
           local telescope = require 'telescope.builtin'
-          local uses_direct_navigation = client and client.name == 'roslyn'
+          local uses_direct_navigation = client and (client.name == 'roslyn' or client.name == 'easy_dotnet')
 
           local map = function(keys, func, desc, mode)
             mode = mode or 'n'
