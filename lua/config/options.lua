@@ -28,7 +28,7 @@ vim.o.smartcase = true
 
 vim.o.signcolumn = 'yes'
 
-vim.o.updatetime = 250
+vim.o.updatetime = 1000
 
 vim.o.timeoutlen = 300
 
@@ -43,8 +43,9 @@ vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 vim.o.inccommand = 'split'
 
 vim.o.cursorline = true
+vim.o.cursorlineopt = 'number'
 
-vim.o.scrolloff = 8
+vim.o.scrolloff = 4
 
 -- Raise a dialog instead of failing on unsaved changes
 vim.o.confirm = true
