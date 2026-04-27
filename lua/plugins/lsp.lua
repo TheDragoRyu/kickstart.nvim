@@ -466,8 +466,20 @@ return {
             map('<leader>cL', vim.lsp.codelens.run, 'Run Code[L]ens')
           end
 
-          -- Highlight references of the word under cursor on CursorHold
-          if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf) then
+          -- Highlight references of the word under cursor on CursorHold.
+          -- Skip on C# (Roslyn round-trip is too slow) and on huge buffers.
+          local function highlight_eligible(buf)
+            if vim.bo[buf].filetype == 'cs' then
+              return false
+            end
+            return vim.api.nvim_buf_line_count(buf) <= 3000
+          end
+
+          if
+            client
+            and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf)
+            and highlight_eligible(event.buf)
+          then
             local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
               buffer = event.buf,
