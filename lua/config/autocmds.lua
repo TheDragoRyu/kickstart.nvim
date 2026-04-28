@@ -10,6 +10,12 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
+-- Server for Unity external editor bridge (nvim-unity wrapper)
+do
+  local addr = vim.fn.has 'win32' == 1 and [[\\.\pipe\nvim-unity]] or (vim.env.XDG_RUNTIME_DIR or '/tmp') .. '/nvim-unity.sock'
+  pcall(vim.fn.serverstart, addr)
+end
+
 -- Markdown-specific settings for Obsidian-like rendering
 vim.api.nvim_create_autocmd('FileType', {
   pattern = 'markdown',
