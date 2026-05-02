@@ -74,7 +74,7 @@ return {
         require('dap').run {
           type = 'unity',
           request = 'attach',
-          name = 'Attach to Unity Editor',
+          name = 'Unity Editor',
         }
       end,
       desc = 'Debug: Attach Unity Editor',
@@ -166,22 +166,39 @@ return {
 
     -- Unity Editor attach debugger (Mono soft debugger protocol)
     -- Binary must be installed manually:
-    --   1. Install VS Code extension: ms-vscode.unity-debug
-    --   2. Copy extension/bin/UnityDebug to ~/.local/share/nvim/unity-debug/UnityDebug
-    --   3. chmod +x ~/.local/share/nvim/unity-debug/UnityDebug
-    local unity_debug_bin = vim.fn.stdpath 'data' .. '/unity-debug/UnityDebug'
+    --   1. Download VS Code extension VSIX: ms-vscode.unity-debug
+    --      https://marketplace.visualstudio.com/items?itemName=Unity.unity-debug
+    --   2. Unzip the .vsix (it's a zip). Inside: extension/bin/UnityDebug.exe
+    --   3. Copy to <stdpath('data')>/unity-debug/
+    --        Windows: %LOCALAPPDATA%\nvim-data\unity-debug\UnityDebug.exe
+    --        *nix:    ~/.local/share/nvim/unity-debug/UnityDebug   (chmod +x)
+    --   4. *nix: requires `mono` on PATH
+    local unity_dir = vim.fn.stdpath 'data' .. '/unity-debug'
+    local is_win = vim.fn.has 'win32' == 1
+    local unity_debug_bin = unity_dir .. (is_win and '/UnityDebug.exe' or '/UnityDebug')
+
     if vim.fn.executable(unity_debug_bin) == 1 then
-      dap.adapters.unity = {
-        type = 'executable',
-        command = unity_debug_bin,
-      }
+      if is_win then
+        dap.adapters.unity = {
+          type = 'executable',
+          command = unity_debug_bin,
+          args = {},
+        }
+      else
+        dap.adapters.unity = {
+          type = 'executable',
+          command = 'mono',
+          args = { unity_debug_bin },
+        }
+      end
+
+      dap.configurations.cs = dap.configurations.cs or {}
+      table.insert(dap.configurations.cs, {
+        type = 'unity',
+        request = 'attach',
+        name = 'Unity Editor',
+      })
     end
-    dap.configurations.cs = dap.configurations.cs or {}
-    table.insert(dap.configurations.cs, {
-      type = 'unity',
-      request = 'attach',
-      name = 'Attach to Unity Editor',
-    })
 
     -- Install golang specific config
     require('dap-go').setup {

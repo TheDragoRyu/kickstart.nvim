@@ -14,6 +14,7 @@ vim.schedule(function()
   vim.o.clipboard = 'unnamedplus'
 end)
 
+vim.o.wrap = false
 vim.o.breakindent = true
 vim.o.tabstop = 4
 vim.o.shiftwidth = 4
@@ -28,7 +29,7 @@ vim.o.smartcase = true
 
 vim.o.signcolumn = 'yes'
 
-vim.o.updatetime = 1000
+vim.o.updatetime = 500
 
 vim.o.timeoutlen = 300
 
