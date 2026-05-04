@@ -16,7 +16,7 @@ return {
       { 'mason-org/mason.nvim', opts = {} },
       'mason-org/mason-lspconfig.nvim',
       { 'WhoIsSethDaniel/mason-tool-installer.nvim', opts = { ensure_installed = ensure_installed } },
-      { 'j-hui/fidget.nvim', opts = {} },
+      { 'j-hui/fidget.nvim', opts = { notification = { override_vim_notify = true } } },
       'saghen/blink.cmp',
     },
     config = function()

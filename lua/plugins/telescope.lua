@@ -19,6 +19,7 @@ return {
 
     require('telescope').setup {
       defaults = {
+        path_display = { 'filename_first' },
         mappings = {
           i = { ['<c-enter>'] = 'to_fuzzy_refine' },
         },
