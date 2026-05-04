@@ -7,11 +7,28 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
+-- Jump to next/prev diagnostic, prioritizing higher severities:
+-- cycle errors first; only fall through to warnings, info, hint when none remain.
+local function jump_diagnostic(count)
+  local severity_order = {
+    vim.diagnostic.severity.ERROR,
+    vim.diagnostic.severity.WARN,
+    vim.diagnostic.severity.INFO,
+    vim.diagnostic.severity.HINT,
+  }
+  for _, severity in ipairs(severity_order) do
+    if #vim.diagnostic.get(0, { severity = severity }) > 0 then
+      vim.diagnostic.jump { count = count, float = true, severity = severity }
+      return
+    end
+  end
+end
+
 vim.keymap.set('n', 'ge', function()
-  vim.diagnostic.jump { count = 1, float = true }
+  jump_diagnostic(1)
 end, { desc = '[G]o to Next [e]rror' })
 vim.keymap.set('n', 'gE', function()
-  vim.diagnostic.jump { count = -1, float = true }
+  jump_diagnostic(-1)
 end, { desc = '[G]o to Previous [E]rror' })
 
 -- Quick exit from insert mode
