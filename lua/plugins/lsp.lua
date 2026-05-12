@@ -23,6 +23,7 @@ return {
       local csharp_lsp_clients = {
         easy_dotnet = true,
         roslyn = true,
+        roslyn_ls = true,
       }
 
       local unity_project_cache = {}
@@ -266,7 +267,7 @@ return {
         callback = function(event)
           local client = vim.lsp.get_client_by_id(event.data.client_id)
           local telescope = require 'telescope.builtin'
-          local uses_direct_navigation = client and (client.name == 'roslyn' or client.name == 'easy_dotnet')
+          local uses_direct_navigation = client and (client.name == 'roslyn' or client.name == 'roslyn_ls' or client.name == 'easy_dotnet')
           local uses_csharp_lens = uses_direct_navigation
           local goto_definition = function()
             if uses_direct_navigation then
@@ -554,6 +555,32 @@ return {
       end
 
       local capabilities = require('blink.cmp').get_lsp_capabilities()
+
+      if vim.fn.has 'nvim-0.12' == 0 then
+        local roslyn_cmd = vim.fs.joinpath(vim.fn.stdpath 'data', 'mason', 'bin', 'roslyn.cmd')
+        if vim.fn.executable(roslyn_cmd) ~= 1 then
+          roslyn_cmd = 'roslyn-language-server'
+        end
+
+        vim.lsp.config('roslyn_ls', {
+          cmd = {
+            roslyn_cmd,
+            '--logLevel',
+            'Information',
+            '--extensionLogDirectory',
+            vim.fs.joinpath(vim.fn.stdpath 'cache', 'roslyn_ls', 'logs'),
+            '--stdio',
+          },
+          capabilities = capabilities,
+          settings = {
+            ['csharp|code_lens'] = {
+              dotnet_enable_references_code_lens = true,
+              dotnet_enable_tests_code_lens = false,
+            },
+          },
+        })
+        vim.lsp.enable 'roslyn_ls'
+      end
 
       local server_configs = {
         gopls = {},

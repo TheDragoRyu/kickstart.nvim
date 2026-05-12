@@ -2,6 +2,12 @@ return {
   'GustavEikaas/easy-dotnet.nvim',
   dependencies = { 'nvim-lua/plenary.nvim', 'nvim-telescope/telescope.nvim' },
   ft = { 'cs', 'cshtml', 'razor' },
+  cond = function()
+    local cwd = vim.fs.normalize(vim.fn.getcwd())
+    local is_unity = vim.fn.isdirectory(cwd .. '/Assets') == 1 and vim.fn.isdirectory(cwd .. '/ProjectSettings') == 1
+    local is_godot = vim.fs.find('project.godot', { path = cwd, upward = true, type = 'file' })[1] ~= nil
+    return not is_unity and not is_godot
+  end,
   config = function()
     require('easy-dotnet').setup {
       lsp = {

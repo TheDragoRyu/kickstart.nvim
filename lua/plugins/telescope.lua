@@ -15,7 +15,11 @@ return {
     { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
   },
   config = function()
-    local is_unity = vim.fn.isdirectory(vim.fn.getcwd() .. '/Assets') == 1
+    local cwd = vim.fs.normalize(vim.fn.getcwd())
+    local godot_project_file = vim.fs.find('project.godot', { path = cwd, upward = true, type = 'file' })[1]
+    local godot_root = godot_project_file and vim.fs.dirname(godot_project_file) or nil
+    local is_unity = vim.fn.isdirectory(cwd .. '/Assets') == 1
+    local is_godot = godot_root ~= nil
 
     require('telescope').setup {
       defaults = {
@@ -44,6 +48,13 @@ return {
           '%.rsp2$',
           '%.mvfrm$',
           '%.aseprite$',
+          -- Godot Specific
+          '[/\\]%.godot[/\\]',
+          '[/\\]%.mono[/\\]',
+          '[/\\]bin[/\\]',
+          '[/\\]obj[/\\]',
+          '%.import$',
+          '%.uid$',
           -- Text format
           '%.ttf$',
           -- Audio/Video file formats
@@ -66,7 +77,27 @@ return {
     vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
     vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
     vim.keymap.set('n', '<leader>sf', function()
-      builtin.find_files(is_unity and { find_command = { 'rg', '--files', '--glob', '*.cs' }, cwd = vim.fn.getcwd() .. '/Assets' } or {})
+      if is_unity then
+        builtin.find_files { find_command = { 'rg', '--files', '--glob', '*.cs' }, cwd = cwd .. '/Assets' }
+      elseif is_godot then
+        builtin.find_files {
+          find_command = {
+            'rg',
+            '--files',
+            '--glob',
+            '*.gd',
+            '--glob',
+            '*.cs',
+            '--glob',
+            '*.tscn',
+            '--glob',
+            '*.tres',
+          },
+          cwd = godot_root,
+        }
+      else
+        builtin.find_files {}
+      end
     end, { desc = '[S]earch [F]iles' })
     vim.keymap.set('n', '<leader>sF', builtin.find_files, { desc = '[S]earch [F]iles (all)' })
     vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })

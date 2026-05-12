@@ -79,6 +79,19 @@ return {
       end,
       desc = 'Debug: Attach Unity Editor',
     },
+    {
+      '<leader>dg',
+      function()
+        local project_file = vim.fs.find('project.godot', { path = vim.fn.expand '%:p:h', upward = true, type = 'file' })[1]
+        require('dap').run {
+          type = 'godot',
+          request = 'launch',
+          name = 'Godot Editor',
+          project = project_file and vim.fs.dirname(project_file) or vim.fn.getcwd(),
+        }
+      end,
+      desc = 'Debug: Attach Godot Editor',
+    },
     -- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
     {
       '<F7>',
@@ -163,6 +176,25 @@ return {
         end,
       },
     }
+
+    local function godot_project()
+      local project_file = vim.fs.find('project.godot', { path = vim.fn.expand '%:p:h', upward = true, type = 'file' })[1]
+      return project_file and vim.fs.dirname(project_file) or vim.fn.getcwd()
+    end
+
+    dap.adapters.godot = {
+      type = 'server',
+      host = vim.g.godot_dap_host or vim.g.godot_host or '127.0.0.1',
+      port = tonumber(vim.g.godot_dap_port) or 6006,
+    }
+
+    dap.configurations.gdscript = dap.configurations.gdscript or {}
+    table.insert(dap.configurations.gdscript, {
+      type = 'godot',
+      request = 'launch',
+      name = 'Godot Editor',
+      project = godot_project,
+    })
 
     -- Unity Editor attach debugger (Mono soft debugger protocol)
     -- Binary must be installed manually:

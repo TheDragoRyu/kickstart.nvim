@@ -45,6 +45,9 @@ return {
   },
   {
     'seblyng/roslyn.nvim',
+    cond = function()
+      return vim.fn.has 'nvim-0.12' == 1
+    end,
     dependencies = {
       'neovim/nvim-lspconfig',
       'saghen/blink.cmp',
